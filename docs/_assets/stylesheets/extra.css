@@ -1,0 +1,24 @@
+/* Styles partagés avec systemd-doc. */
+
+:root {
+  --md-primary-fg-color: #3f51b5;
+  --md-accent-fg-color: #3f51b5;
+}
+
+.md-typeset code {
+  font-size: 0.85em;
+}
+
+.md-typeset pre > code {
+  font-size: 0.8em;
+}
+
+/* Amélioration des admonitions */
+.md-typeset .admonition {
+  border-left: 0.2rem solid;
+}
+
+/* Grille de contenu élargie */
+.md-grid {
+  max-width: 95vw;
+}

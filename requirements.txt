@@ -1,0 +1,12 @@
+mkdocs>=1.6,<2
+mkdocs-material>=9.5,<10
+
+# Plugin awesome-pages
+mkdocs-awesome-pages-plugin>=2.9.2
+
+# Extensions Markdown
+pymdown-extensions>=10.7
+
+# Autres plugins utiles
+mkdocs-minify-plugin>=0.8.0
+mkdocs-git-revision-date-localized-plugin>=1.2.4

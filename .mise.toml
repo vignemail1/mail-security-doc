@@ -1,0 +1,60 @@
+# Configuration mise pour le projet systemd-doc
+# https://mise.jdx.dev
+
+[tools]
+node = "latest"
+python = "3.14"
+
+[env]
+_.python.venv = { path = ".venv", create = true }
+
+[tasks.install]
+description = "Installer les dépendances Python"
+run = """
+  pip install --upgrade pip
+  pip install -r requirements.txt
+"""
+
+[tasks.dev]
+description = "Démarrer le serveur de développement MkDocs"
+run = "mkdocs serve"
+depends = ["install"]
+
+[tasks.build]
+description = "Construire le site statique"
+run = "mkdocs build"
+depends = ["install"]
+
+[tasks.deploy]
+description = "Déployer sur GitHub Pages"
+run = "mkdocs gh-deploy --force"
+depends = ["install"]
+
+[tasks.clean]
+description = "Nettoyer les fichiers générés"
+run = "rm -rf site/"
+
+[tasks.lint]
+description = "Vérifier la syntaxe Markdown (nécessite markdownlint-cli2)"
+run = """
+  if command -v markdownlint-cli2 &> /dev/null; then
+    markdownlint-cli2 'docs/**/*.md'
+  else
+    echo "⚠️  markdownlint-cli2 not found"
+    echo "Install with: npm install -g markdownlint-cli2"
+    exit 1
+  fi
+"""
+
+[tasks.lint-fix]
+description = "Corriger automatiquement les problèmes Markdown avec markdownlint"
+run = """
+  if command -v markdownlint-cli2 &> /dev/null; then
+    markdownlint-cli2 --fix 'docs/**/*.md'
+  else
+    echo "⚠️  markdownlint-cli2 not found"
+    echo "Install with: npm install -g markdownlint-cli2"
+    exit 1
+  fi
+"""
+
