@@ -1,14 +1,20 @@
+---
+title: "SRS - forwarding email"
+---
 # SRS (Sender Rewriting Scheme)
 
 ## Introduction
 
-Le *Sender Rewriting Scheme* (SRS) est une technique utilisée par les serveurs de transfert de courrier (*forwarders*) pour réécrire l’adresse d’expéditeur de l’enveloppe SMTP. Son objectif principal est de préserver la compatibilité avec SPF lorsqu’un message est transféré vers un autre serveur.
+Le _Sender Rewriting Scheme_ (SRS) est une technique utilisée par les serveurs de transfert de courrier (_forwarders_) pour réécrire l’adresse d’expéditeur de l’enveloppe SMTP.  
+Son objectif principal est de préserver la compatibilité avec SPF lorsqu’un message est transféré vers un autre serveur.
 
-SRS est défini dans la [RFC 8617](https://www.rfc-editor.org/rfc/rfc8617.html), qui documente notamment l’usage de SRS dans le contexte du transfert de courrier. Il ne s’agit ni d’un mécanisme d’authentification comparable à DKIM ou DMARC, ni d’une garantie que le contenu du message est légitime : c’est une transformation de l’adresse d’enveloppe, à appliquer par le système qui effectue le transfert.
+SRS est défini dans la [RFC 8617](https://www.rfc-editor.org/rfc/rfc8617.html), qui documente notamment l’usage de SRS dans le contexte du transfert de courrier.  
+Il ne s’agit ni d’un mécanisme d’authentification comparable à DKIM ou DMARC, ni d’une garantie que le contenu du message est légitime : c’est une transformation de l’adresse d’enveloppe, à appliquer par le système qui effectue le transfert.
 
 ## Le problème du SPF lors d’un transfert
 
-SPF évalue si l’adresse IP qui se connecte au serveur destinataire est autorisée à émettre pour le domaine de l’expéditeur de l’enveloppe SMTP (`MAIL FROM`). Lors d’un transfert, l’IP visible par le destinataire est celle du serveur de transfert, et non celle du serveur d’origine. Si le domaine d’origine n’autorise pas cette IP dans son enregistrement SPF, le contrôle peut échouer.
+SPF évalue si l’adresse IP qui se connecte au serveur destinataire est autorisée à émettre pour le domaine de l’expéditeur de l’enveloppe SMTP (`MAIL FROM`).  
+Lors d’un transfert, l’IP visible par le destinataire est celle du serveur de transfert, et non celle du serveur d’origine. Si le domaine d’origine n’autorise pas cette IP dans son enregistrement SPF, le contrôle peut échouer.
 
 Par exemple, Alice envoie un message depuis `alice@example.org` vers une boîte qui redirige le courrier vers `bob@destination.net` :
 
@@ -17,10 +23,10 @@ Par exemple, Alice envoie un message depuis `alice@example.org` vers une boîte 
 3. `destination.net` voit une connexion venant de l’IP du serveur de transfert ;
 4. SPF vérifie toujours le domaine d’origine de l’enveloppe, `example.org`, qui n’a aucune raison d’autoriser le serveur de transfert.
 
-Le résultat SPF peut donc devenir `fail` ou `softfail`. Ce phénomène est souvent appelé *forwarding problem*. Il peut contribuer à l’échec de DMARC si le message ne dispose pas d’un autre mécanisme aligné qui passe, par exemple une signature DKIM encore valide.
+Le résultat SPF peut donc devenir `fail` ou `softfail`. Ce phénomène est souvent appelé _forwarding problem_. Il peut contribuer à l’échec de DMARC si le message ne dispose pas d’un autre mécanisme aligné qui passe, par exemple une signature DKIM encore valide.
 
-> [!NOTE]
-> SPF vérifie l’expéditeur de l’enveloppe SMTP, pas nécessairement l’adresse visible dans l’en-tête `From:`. SRS modifie l’enveloppe et ne doit pas être confondu avec la réécriture de cet en-tête.
+!!! note
+SPF vérifie l’expéditeur de l’enveloppe SMTP, pas nécessairement l’adresse visible dans l’en-tête `From:`. SRS modifie l’enveloppe et ne doit pas être confondu avec la réécriture de cet en-tête.
 
 ## Principe de fonctionnement
 
@@ -66,7 +72,7 @@ Adresse SRS1 sur le domaine du second forwarder
 
 ## Gestion des retours et des rebonds
 
-L’adresse d’enveloppe sert aussi à acheminer les notifications de non-remise (*bounces*). Si un message transféré ne peut pas être livré, le serveur destinataire renvoie normalement le rapport à l’adresse SRS. Le forwarder reçoit ce retour, vérifie l’adresse réécrite, restaure l’adresse d’enveloppe précédente, puis relaie le rapport vers l’expéditeur d’origine.
+L’adresse d’enveloppe sert aussi à acheminer les notifications de non-remise (_bounces_). Si un message transféré ne peut pas être livré, le serveur destinataire renvoie normalement le rapport à l’adresse SRS. Le forwarder reçoit ce retour, vérifie l’adresse réécrite, restaure l’adresse d’enveloppe précédente, puis relaie le rapport vers l’expéditeur d’origine.
 
 Le domaine qui émet les adresses SRS doit donc :
 
@@ -95,13 +101,13 @@ Une adresse SRS n’est pas une adresse permanente à communiquer aux utilisateu
 
 ## Relation avec SPF, DKIM, DMARC et ARC
 
-| Mécanisme | Rôle dans le transfert |
-|---|---|
-| SPF | SRS permet au SPF de contrôler le domaine du serveur qui retransmet le message. |
-| DKIM | Peut conserver une authentification alignée avec le domaine du `From:` si la signature reste valide. |
-| DMARC | Peut encore échouer si SPF n’est plus aligné et qu’aucune signature DKIM alignée ne passe. |
-| ARC | Peut transmettre des résultats d’authentification observés par les intermédiaires ; il ne remplace pas SRS et le destinataire décide s’il fait confiance à la chaîne ARC. |
-| SRS | Réécrit l’expéditeur d’enveloppe pour traiter le problème SPF du relais et permettre le retour des bounces. |
+| Mécanisme | Rôle dans le transfert                                                                                                                                                    |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SPF       | SRS permet au SPF de contrôler le domaine du serveur qui retransmet le message.                                                                                           |
+| DKIM      | Peut conserver une authentification alignée avec le domaine du `From:` si la signature reste valide.                                                                      |
+| DMARC     | Peut encore échouer si SPF n’est plus aligné et qu’aucune signature DKIM alignée ne passe.                                                                                |
+| ARC       | Peut transmettre des résultats d’authentification observés par les intermédiaires ; il ne remplace pas SRS et le destinataire décide s’il fait confiance à la chaîne ARC. |
+| SRS       | Réécrit l’expéditeur d’enveloppe pour traiter le problème SPF du relais et permettre le retour des bounces.                                                               |
 
 SRS et ARC sont donc complémentaires. SRS adapte l’enveloppe pour que SPF puisse être évalué sur le serveur de transfert ; ARC peut conserver le contexte des contrôles effectués avant qu’un transfert ou une modification ne fasse échouer l’authentification au destinataire final.
 
@@ -120,8 +126,9 @@ Points de contrôle importants :
 7. **Préserver les traces.** Conserver des journaux suffisants pour diagnostiquer les échecs de validation, les adresses expirées et les bounces non distribués, sans exposer le secret.
 8. **Contrôler les règles d’acheminement.** Les messages reçus à une adresse SRS doivent aboutir au service qui peut la vérifier et restaurer l’adresse précédente, et non être traités comme du courrier ordinaire.
 
-> [!WARNING]
-> Ne restaurez pas une adresse d’origine à partir d’une chaîne SRS non vérifiée. Une restauration sans validation cryptographique permettrait à un tiers de faire envoyer des bounces vers une adresse choisie par lui, et pourrait transformer le serveur en relais d’abus.
+!!! warning
+    Ne restaurez pas une adresse d’origine à partir d’une chaîne SRS non vérifiée.  
+    Une restauration sans validation cryptographique permettrait à un tiers de faire envoyer des bounces vers une adresse choisie par lui, et pourrait transformer le serveur en relais d’abus.
 
 ## Vérification
 

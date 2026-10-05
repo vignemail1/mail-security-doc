@@ -1,11 +1,11 @@
 ---
 title: "Mise en place"
 ---
-# 8. Guide de Mise en Place avec Postfix sur Linux
+# Guide de Mise en Place avec Postfix sur Linux
 
 Ce chapitre détaille l'implémentation complète de SPF, DKIM, DMARC et ARC sur un serveur Linux utilisant Postfix comme MTA (Mail Transfer Agent).
 
-## 8.1 Prérequis
+## Prérequis
 
 ### Environnement
 
@@ -26,44 +26,43 @@ export SELECTOR="default"
 
 ### Architecture cible
 
-```
-┌─────────────────────────────────────────┐
-│         Serveur Mail Linux              │
-│  (mail.exemple.fr - 192.0.2.10)        │
-│                                         │
-│  ┌─────────────────────────────────┐   │
-│  │         Postfix MTA             │   │
-│  │  - SMTP entrant/sortant         │   │
-│  └───┬─────────────────────────┬───┘   │
-│      │                         │       │
-│  ┌───▼─────┐  ┌──────▼──────┐ │       │
-│  │ OpenDKIM│  │ OpenDMARC   │ │       │
-│  │ (8891)  │  │   (8893)    │ │       │
-│  └───┬─────┘  └──────┬──────┘ │       │
-│      │                │        │       │
-│  ┌───▼────────────────▼──────┐ │      │
-│  │  policyd-spf-python       │ │      │
-│  └───────────────────────────┘ │      │
-│                                         │
-│  ┌─────────────────────────────────┐   │
-│  │      OpenARC (optionnel)        │   │
-│  │          (8892)                 │   │
-│  └─────────────────────────────────┘   │
-└─────────────────────────────────────────┘
-            │
-            │  DNS
-            ▼
-┌─────────────────────────────────────────┐
-│     Serveur DNS (exemple.fr)            │
-│                                         │
-│  - SPF: TXT exemple.fr                 │
-│  - DKIM: TXT default._domainkey...     │
-│  - DMARC: TXT _dmarc.exemple.fr        │
-│  - PTR: 192.0.2.10 → mail.exemple.fr   │
-└─────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph MAIL["Serveur Mail Linux<br/>mail.exemple.fr — 192.0.2.10"]
+        direction TB
+
+        POSTFIX["Postfix MTA<br/><br/>• SMTP entrant / sortant"]
+
+        subgraph FILTERS["Services de filtrage / authentification"]
+            direction LR
+            OPENDKIM["OpenDKIM<br/>Port 8891"]
+            OPENDMARC["OpenDMARC<br/>Port 8893"]
+            SPF["policyd-spf-python"]
+        end
+
+        OPENARC["OpenARC — optionnel<br/>Port 8892"]
+
+        POSTFIX --> OPENDKIM
+        POSTFIX --> OPENDMARC
+        POSTFIX --> SPF
+        POSTFIX -.-> OPENARC
+
+        OPENDKIM --> SPF
+        OPENDMARC --> SPF
+    end
+
+    subgraph DNS_SERVER["Serveur DNS — exemple.fr"]
+        direction TB
+        SPF_DNS["SPF<br/>TXT exemple.fr"]
+        DKIM_DNS["DKIM<br/>TXT default._domainkey.exemple.fr"]
+        DMARC_DNS["DMARC<br/>TXT _dmarc.exemple.fr"]
+        PTR_DNS["PTR<br/>192.0.2.10 → mail.exemple.fr"]
+    end
+
+    MAIL -->|Requêtes DNS| DNS_SERVER
 ```
 
-## 8.2 Installation de Postfix
+## Installation de Postfix
 
 ### Debian/Ubuntu
 
@@ -164,9 +163,9 @@ smtpd_recipient_restrictions =
     reject_unknown_recipient_domain
 ```
 
-## 8.3 Configuration DNS préalable
+## Configuration DNS préalable
 
-### 1. Reverse DNS (PTR)
+### Reverse DNS (PTR)
 
 Contacter votre fournisseur d'hébergement pour configurer :
 
@@ -181,13 +180,13 @@ dig -x 192.0.2.10 +short
 # Résultat attendu: mail.exemple.fr.
 ```
 
-### 2. Enregistrement A
+### Enregistrement A
 
 ```dns
 mail.exemple.fr. IN A 192.0.2.10
 ```
 
-### 3. Enregistrement MX
+### Enregistrement MX
 
 ```dns
 exemple.fr. IN MX 10 mail.exemple.fr.
@@ -200,9 +199,9 @@ dig MX exemple.fr +short
 # Résultat attendu: 10 mail.exemple.fr.
 ```
 
-## 8.4 Configuration SPF
+## Configuration SPF
 
-### 1. Déterminer la politique SPF
+### Déterminer la politique SPF
 
 Lister toutes les sources d'envoi légitimes :
 
@@ -217,7 +216,7 @@ Lister toutes les sources d'envoi légitimes :
 # - Mailchimp: include:servers.mcsv.net
 ```
 
-### 2. Créer l'enregistrement SPF
+### Créer l'enregistrement SPF
 
 **Configuration simple (serveur uniquement)** :
 
@@ -241,7 +240,7 @@ exemple.fr. IN TXT "v=spf1 mx ip4:192.0.2.10 -all"
 newsletter.exemple.fr. IN TXT "v=spf1 include:sendgrid.net -all"
 ```
 
-### 3. Publier l'enregistrement
+### Publier l'enregistrement
 
 Utiliser votre interface DNS (Cloudflare, OVH, Gandi, etc.) ou fichier de zone :
 
@@ -255,7 +254,7 @@ send
 EOF
 ```
 
-### 4. Vérifier la publication
+### Vérifier la publication
 
 ```bash
 dig TXT exemple.fr +short | grep spf
@@ -265,7 +264,7 @@ dig TXT exemple.fr +short | grep spf
 curl "https://mxtoolbox.com/api/v1/Lookup/spf?argument=exemple.fr"
 ```
 
-### 5. Configuration de la vérification SPF (réception)
+### Configuration de la vérification SPF (réception)
 
 **Debian/Ubuntu** :
 
@@ -321,9 +320,9 @@ Header_Type = AR
 systemctl restart postfix
 ```
 
-## 8.5 Configuration DKIM avec OpenDKIM
+## Configuration DKIM avec OpenDKIM
 
-### 1. Installation
+### Installation
 
 **Debian/Ubuntu** :
 
@@ -337,7 +336,7 @@ apt install -y opendkim opendkim-tools
 dnf install -y opendkim
 ```
 
-### 2. Génération des clés
+### Génération des clés
 
 ```bash
 # Créer la structure de répertoires
@@ -356,7 +355,7 @@ chown -R opendkim:opendkim /etc/opendkim
 chmod 600 /etc/opendkim/keys/${DOMAIN}/${SELECTOR}.private.key
 ```
 
-### 3. Publier la clé publique DNS
+### Publier la clé publique DNS
 
 Afficher la clé publique :
 
@@ -389,7 +388,7 @@ Vérification DNS :
 dig TXT default._domainkey.exemple.fr +short
 ```
 
-### 4. Configuration d'OpenDKIM
+### Configuration d'OpenDKIM
 
 **Fichier `/etc/opendkim.conf`** :
 
@@ -452,7 +451,7 @@ exemple.fr
 192.168.1.0/24
 ```
 
-### 5. Intégration avec Postfix
+### Intégration avec Postfix
 
 **Éditer `/etc/postfix/main.cf`** :
 
@@ -464,7 +463,7 @@ smtpd_milters = inet:127.0.0.1:8891
 non_smtpd_milters = $smtpd_milters
 ```
 
-### 6. Démarrage des services
+### Démarrage des services
 
 ```bash
 # Activer et démarrer OpenDKIM
@@ -481,7 +480,7 @@ systemctl restart postfix
 journalctl -u opendkim -f
 ```
 
-### 7. Test de signature DKIM
+### Test de signature DKIM
 
 ```bash
 # Envoyer un email de test
@@ -491,9 +490,9 @@ echo "Test DKIM" | mail -s "Test" check-auth@verifier.port25.com
 grep -i dkim /var/log/mail.log
 ```
 
-## 8.6 Configuration DMARC avec OpenDMARC
+## Configuration DMARC avec OpenDMARC
 
-### 1. Installation
+### Installation
 
 **Debian/Ubuntu** :
 
@@ -507,7 +506,7 @@ apt install -y opendmarc
 dnf install -y opendmarc
 ```
 
-### 2. Publication de l'enregistrement DMARC
+### Publication de l'enregistrement DMARC
 
 **Phase 1 : Monitoring (4-8 semaines)** :
 
@@ -521,7 +520,7 @@ _dmarc.exemple.fr. IN TXT "v=DMARC1; p=none; rua=mailto:dmarc@exemple.fr; ruf=ma
 dig TXT _dmarc.exemple.fr +short
 ```
 
-### 3. Configuration d'OpenDMARC
+### Configuration d'OpenDMARC
 
 **Fichier `/etc/opendmarc.conf`** :
 
@@ -555,7 +554,7 @@ Syslog true
 SyslogFacility mail
 ```
 
-### 4. Intégration avec Postfix
+### Intégration avec Postfix
 
 **Éditer `/etc/postfix/main.cf`** :
 
@@ -565,7 +564,7 @@ smtpd_milters = inet:127.0.0.1:8891, inet:127.0.0.1:8893
 non_smtpd_milters = $smtpd_milters
 ```
 
-### 5. Configuration de la base de données (optionnel)
+### Configuration de la base de données (optionnel)
 
 Pour la génération de rapports automatiques :
 
@@ -596,7 +595,7 @@ DatabasePassword mot_de_passe_securise
 DatabaseName opendmarc
 ```
 
-### 6. Script de génération des rapports
+### Script de génération des rapports
 
 Créer `/usr/local/bin/opendmarc-reports.sh` :
 
@@ -639,7 +638,7 @@ chmod +x /usr/local/bin/opendmarc-reports.sh
 chmod +x /etc/cron.daily/opendmarc-reports
 ```
 
-### 7. Démarrage des services
+### Démarrage des services
 
 ```bash
 # Activer et démarrer OpenDMARC
@@ -656,11 +655,11 @@ systemctl restart postfix
 journalctl -u opendmarc -f
 ```
 
-## 8.7 Configuration ARC avec OpenARC (optionnel)
+## Configuration ARC avec OpenARC (optionnel)
 
 ARC est recommandé si vous opérez un service de forwarding, liste de diffusion ou passerelle email.
 
-### 1. Installation
+### Installation
 
 **Debian/Ubuntu** :
 
@@ -674,7 +673,7 @@ apt install -y openarc
 dnf install -y openarc
 ```
 
-### 2. Génération des clés ARC
+### Génération des clés ARC
 
 ```bash
 # Réutiliser la même clé que DKIM ou en générer une nouvelle
@@ -688,7 +687,7 @@ openssl rsa -in arc.private -pubout -out arc.public
 openssl rsa -in arc.private -pubout -outform PEM | grep -v '^-' | tr -d '\n'
 ```
 
-### 3. Publier la clé ARC DNS
+### Publier la clé ARC DNS
 
 ```dns
 arc._domainkey.exemple.fr. IN TXT (
@@ -697,7 +696,7 @@ arc._domainkey.exemple.fr. IN TXT (
 )
 ```
 
-### 4. Configuration OpenARC
+### Configuration OpenARC
 
 **Fichier `/etc/openarc/openarc.conf`** :
 
@@ -746,7 +745,7 @@ exemple.fr
 192.168.1.0/24
 ```
 
-### 5. Intégration avec Postfix
+### Intégration avec Postfix
 
 **Éditer `/etc/postfix/main.cf`** :
 
@@ -756,7 +755,7 @@ smtpd_milters = inet:127.0.0.1:8891, inet:127.0.0.1:8892, inet:127.0.0.1:8893
 non_smtpd_milters = $smtpd_milters
 ```
 
-### 6. Démarrage
+### Démarrage
 
 ```bash
 systemctl enable openarc
@@ -765,9 +764,9 @@ systemctl status openarc
 systemctl restart postfix
 ```
 
-## 8.8 Tests et validation
+## Tests et validation
 
-### 1. Test d'envoi complet
+### Test d'envoi complet
 
 ```bash
 # Envoyer un email de test
@@ -779,7 +778,7 @@ check-auth@verifier.port25.com
 
 Vous recevrez un rapport détaillé par email.
 
-### 2. Vérifier les en-têtes
+### Vérifier les en-têtes
 
 Envoyer un email à votre propre Gmail et examiner les en-têtes :
 
@@ -796,7 +795,7 @@ DMARC: PASS
 ARC: PASS (si configuré)
 ```
 
-### 3. Tests avec swaks
+### Tests avec swaks
 
 ```bash
 # Installer swaks
@@ -811,7 +810,7 @@ swaks --to destinataire@exemple.com \
       --auth-password 'password'
 ```
 
-### 4. Vérifier les logs
+### Vérifier les logs
 
 ```bash
 # Logs généraux
@@ -830,7 +829,7 @@ journalctl -u openarc -f
 grep 'test@exemple.fr' /var/log/mail.log
 ```
 
-### 5. Outils de validation en ligne
+### Outils de validation en ligne
 
 ```bash
 # SPF
@@ -847,9 +846,9 @@ dig TXT _dmarc.exemple.fr +short
 # https://mxtoolbox.com/SuperTool.aspx
 ```
 
-## 8.9 Monitoring et maintenance
+## Monitoring et maintenance
 
-### 1. Script de monitoring
+### Script de monitoring
 
 Créer `/usr/local/bin/check-mail-auth.sh` :
 
@@ -898,7 +897,7 @@ chmod +x /usr/local/bin/check-mail-auth.sh
 0 6 * * * /usr/local/bin/check-mail-auth.sh
 ```
 
-### 2. Alertes avec fail2ban
+### Alertes avec fail2ban
 
 ```bash
 # Installer fail2ban
@@ -920,7 +919,7 @@ findtime = 3600
 bantime = 86400
 ```
 
-### 3. Rotation des clés DKIM (tous les 6-12 mois)
+### Rotation des clés DKIM (tous les 6-12 mois)
 
 ```bash
 #!/bin/bash
@@ -951,9 +950,9 @@ echo "- ${KEY_DIR}/${OLD_SELECTOR}.private"
 echo "- Enregistrement DNS: ${OLD_SELECTOR}._domainkey.${DOMAIN}"
 ```
 
-## 8.10 Sécurisation avancée
+## Sécurisation avancée
 
-### 1. Firewall
+### Firewall
 
 ```bash
 # UFW (Debian/Ubuntu)
@@ -974,7 +973,7 @@ firewall-cmd --permanent --add-service=smtps
 firewall-cmd --reload
 ```
 
-### 2. Rate limiting
+### Rate limiting
 
 **Éditer `/etc/postfix/main.cf`** :
 
@@ -993,7 +992,7 @@ smtpd_soft_error_limit = 5
 smtpd_hard_error_limit = 10
 ```
 
-### 3. PostScreen (protection anti-spam)
+### PostScreen (protection anti-spam)
 
 **Éditer `/etc/postfix/master.cf`** :
 
@@ -1023,7 +1022,7 @@ postscreen_dnsbl_action = enforce
 postscreen_greet_action = enforce
 ```
 
-### 4. Certificats SSL/TLS avec Let's Encrypt
+### Certificats SSL/TLS avec Let's Encrypt
 
 ```bash
 # Installer certbot
@@ -1046,7 +1045,7 @@ crontab -e
 systemctl restart postfix
 ```
 
-## 8.11 Troubleshooting courant
+## Troubleshooting courant
 
 ### Problème : Emails non signés DKIM
 
@@ -1118,7 +1117,7 @@ grep "DMARC" /var/log/mail.log | grep "fail"
 # Utiliser adkim=r et aspf=r pour alignement relaxed
 ```
 
-## 8.12 Checklist finale
+## Checklist finale
 
 ```markdown
 ### Prérequis
@@ -1183,7 +1182,7 @@ grep "DMARC" /var/log/mail.log | grep "fail"
 ☐ Plan de rotation des clés établi
 ```
 
-## 8.13 Commandes utiles récapitulatives
+## Commandes utiles récapitulatives
 
 ```bash
 # Vérifier la configuration Postfix
@@ -1220,7 +1219,7 @@ dig TXT default._domainkey.exemple.fr +short
 echo "Test" | mail -s "Sujet" destinataire@example.com
 ```
 
-## 8.14 Ressources et références
+## Ressources et références
 
 ### Documentation officielle
 
