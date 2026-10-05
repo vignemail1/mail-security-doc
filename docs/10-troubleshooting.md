@@ -1,11 +1,11 @@
 ---
 title: "Troubleshoot"
 ---
-# 10. Dépannage et Bonnes Pratiques
+# Dépannage et Bonnes Pratiques
 
 Ce chapitre répertorie les problèmes courants rencontrés lors de la mise en œuvre de SPF, DKIM, DMARC et ARC, ainsi que les bonnes pratiques pour maintenir une configuration optimale.
 
-## 10.1 Problèmes courants SPF
+## Problèmes courants SPF
 
 ### Problème : SPF fail malgré une configuration correcte
 
@@ -129,7 +129,7 @@ exemple.fr. IN TXT (
 )
 ```
 
-## 10.2 Problèmes courants DKIM
+## Problèmes courants DKIM
 
 ### Problème : Emails non signés DKIM
 
@@ -306,7 +306,7 @@ systemctl restart opendkim
 # Après 7 jours, supprimer ancienne clé
 ```
 
-## 10.3 Problèmes courants DMARC
+## Problèmes courants DMARC
 
 ### Problème : DMARC fail malgré SPF et DKIM pass
 
@@ -460,7 +460,7 @@ EOF
 chmod +x parse-dmarc.py
 ```
 
-## 10.4 Problèmes courants ARC
+## Problèmes courants ARC
 
 ### Problème : ARC seal invalide
 
@@ -502,7 +502,7 @@ AuthservID mail.exemple.fr
 TrustedAuthservIDs mail.exemple.fr,autre-serveur.com
 ```
 
-## 10.5 Problèmes de délivrabilité
+## Problèmes de délivrabilité
 
 ### Emails arrivés en spam malgré SPF/DKIM/DMARC pass
 
@@ -609,7 +609,7 @@ feb 10 12:00:00 mail postfix/smtp[1234]: 550 5.7.1 DMARC policy reject
 
 **Solution :** S'assurer DMARC pass avec alignement strict.
 
-## 10.6 Bonnes pratiques générales
+## Bonnes pratiques générales
 
 ### SPF
 
@@ -734,7 +734,7 @@ tar czf - /etc/opendkim/keys | \
 rsync /backup/opendkim-keys-*.gpg backup-server:/secure/
 ```
 
-## 10.7 Monitoring et alertes
+## Monitoring et alertes
 
 ### Scripts de monitoring
 
@@ -891,7 +891,7 @@ chmod +x /usr/local/bin/email-auth-metrics.sh
 echo "*/5 * * * * /usr/local/bin/email-auth-metrics.sh" | crontab -
 ```
 
-## 10.8 Checklist de maintenance
+## Checklist de maintenance
 
 ### Quotidienne
 
@@ -939,7 +939,7 @@ echo "*/5 * * * * /usr/local/bin/email-auth-metrics.sh" | crontab -
 ☐ Audit externe si requis
 ```
 
-## 10.9 Documentation et communication
+## Documentation et communication
 
 ### Documenter les changements
 
@@ -1003,7 +1003,7 @@ Suivi quotidien pendant 2 semaines après activation.
 Questions: admin@exemple.fr
 ```
 
-## 10.10 Résumé des commandes utiles
+## Résumé des commandes utiles
 
 ```bash
 ### Diagnostic rapide
