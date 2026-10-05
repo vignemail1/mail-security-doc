@@ -26,7 +26,7 @@ Par exemple, Alice envoie un message depuis `alice@example.org` vers une boîte 
 Le résultat SPF peut donc devenir `fail` ou `softfail`. Ce phénomène est souvent appelé _forwarding problem_. Il peut contribuer à l’échec de DMARC si le message ne dispose pas d’un autre mécanisme aligné qui passe, par exemple une signature DKIM encore valide.
 
 !!! note
-SPF vérifie l’expéditeur de l’enveloppe SMTP, pas nécessairement l’adresse visible dans l’en-tête `From:`. SRS modifie l’enveloppe et ne doit pas être confondu avec la réécriture de cet en-tête.
+    SPF vérifie l’expéditeur de l’enveloppe SMTP, pas nécessairement l’adresse visible dans l’en-tête `From:`. SRS modifie l’enveloppe et ne doit pas être confondu avec la réécriture de cet en-tête.
 
 ## Principe de fonctionnement
 
@@ -126,9 +126,9 @@ Points de contrôle importants :
 7. **Préserver les traces.** Conserver des journaux suffisants pour diagnostiquer les échecs de validation, les adresses expirées et les bounces non distribués, sans exposer le secret.
 8. **Contrôler les règles d’acheminement.** Les messages reçus à une adresse SRS doivent aboutir au service qui peut la vérifier et restaurer l’adresse précédente, et non être traités comme du courrier ordinaire.
 
-!!! warning
-    Ne restaurez pas une adresse d’origine à partir d’une chaîne SRS non vérifiée.  
-    Une restauration sans validation cryptographique permettrait à un tiers de faire envoyer des bounces vers une adresse choisie par lui, et pourrait transformer le serveur en relais d’abus.
+    !!! warning
+        Ne restaurez pas une adresse d’origine à partir d’une chaîne SRS non vérifiée.  
+        Une restauration sans validation cryptographique permettrait à un tiers de faire envoyer des bounces vers une adresse choisie par lui, et pourrait transformer le serveur en relais d’abus.
 
 ## Vérification
 
